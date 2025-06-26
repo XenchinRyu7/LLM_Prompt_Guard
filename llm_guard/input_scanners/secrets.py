@@ -35,6 +35,15 @@ _default_detect_secrets_config = {
         {"name": "SquareOAuthDetector"},
         {"name": "PrivateKeyDetector"},
         {"name": "TwilioKeyDetector"},
+        {"name": "OpenAIDetector"},
+        {
+            "name": "GCloudApiKeyDetector",
+            "path": _custom_plugins_path + "/gcloud_api_key_detector.py",
+        },
+        {
+            "name": "OpenAIKeyDetector",
+            "path": _custom_plugins_path + "/openai_api_key_detector.py",
+        },
         {
             "name": "AdafruitKeyDetector",
             "path": _custom_plugins_path + "/adafruit.py",

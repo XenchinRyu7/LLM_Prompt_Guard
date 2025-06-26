@@ -1,13 +1,10 @@
 from llm_guard.input_scanners import Anonymize
 from llm_guard.vault import Vault
 
-# Inisialisasi Vault untuk menyimpan data yang dianonimkan
 vault = Vault()
 
-# Inisialisasi Anonymize Scanner
 scanner = Anonymize(vault=vault)
 
-# Teks yang akan diperiksa
 prompt = """
 Given the personal profile of Johnathan Edward Doe, please summarize the following resume:
 
@@ -26,7 +23,6 @@ Profile:
     - XYZ Global Systems, Senior Software Developer, 2015-2021.
 """
 
-# Mendeteksi dan mengaburkan informasi pribadi
 sanitized_prompt, is_valid, risk_score = scanner.scan(prompt)
 
 print("Sanitized Prompt:\n", sanitized_prompt)
