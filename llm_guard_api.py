@@ -18,7 +18,13 @@ app.add_middleware(
 )
 
 vault = Vault()
-pii_scanner = Anonymize(vault=vault)
+# Configure Anonymize with specific entity types and thresholds
+pii_scanner = Anonymize(
+    vault=vault,
+    entity_types=["EMAIL_ADDRESS", "PHONE_NUMBER", "CREDIT_CARD", "US_SSN", "IP_ADDRESS", "CRYPTO", "IBAN_CODE", "US_BANK_NUMBER", "UUID"],
+    use_faker=False,
+    threshold=0.8  # Higher threshold to reduce false positives
+)
 
 class ValidationRequest(BaseModel):
     text: str
@@ -27,6 +33,28 @@ class ValidationResponse(BaseModel):
     valid: bool
     detected: List[str]
     redacted: str
+
+def restore_pronouns(redacted_text: str, original_text: str) -> str:
+    """
+    Clean up redacted text - merge split emails and phone numbers.
+    """
+    import re
+    result = redacted_text
+    
+    # Merge consecutive EMAIL_ADDRESS redactions
+    result = re.sub(r'\[REDACTED_EMAIL_ADDRESS_\d+\]\[REDACTED_EMAIL_ADDRESS_\d+\]', '[REDACTED_EMAIL_ADDRESS]', result)
+    
+    # Merge consecutive PHONE_NUMBER redactions  
+    result = re.sub(r'\[REDACTED_PHONE_NUMBER_\d+\]\[REDACTED_PHONE_NUMBER_\d+\]', '[REDACTED_PHONE_NUMBER]', result)
+    
+    # Clean up numbered redactions to be simpler
+    result = re.sub(r'\[REDACTED_EMAIL_ADDRESS_\d+\]', '[REDACTED_EMAIL_ADDRESS]', result)
+    result = re.sub(r'\[REDACTED_PHONE_NUMBER_\d+\]', '[REDACTED_PHONE_NUMBER]', result)
+    result = re.sub(r'\[REDACTED_CREDIT_CARD_\d+\]', '[REDACTED_CREDIT_CARD]', result)
+    result = re.sub(r'\[REDACTED_US_SSN_\d+\]', '[REDACTED_US_SSN]', result)
+    result = re.sub(r'\[REDACTED_IP_ADDRESS_\d+\]', '[REDACTED_IP_ADDRESS]', result)
+    
+    return result
 
 @app.post("/validate", response_model=ValidationResponse)
 async def validate_text(request: ValidationRequest):
@@ -40,6 +68,8 @@ async def validate_text(request: ValidationRequest):
         detected_types = []
         if not is_valid:
             detected_types = _extract_detected_types(request.text, sanitized_prompt)
+        
+        sanitized_prompt = restore_pronouns(sanitized_prompt, request.text)
         
         return ValidationResponse(
             valid=is_valid,
